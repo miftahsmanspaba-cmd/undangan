@@ -4,8 +4,8 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { MotionConfig, motion } from 'motion/react';
-import { Instagram, Settings2 } from 'lucide-react';
+import { MotionConfig, motion, useScroll, useSpring } from 'motion/react';
+import { CalendarHeart, Instagram, MapPin } from 'lucide-react';
 import { CountdownSection } from './components/CountdownSection';
 import { CoverEnvelope } from './components/CoverEnvelope';
 import { GallerySection } from './components/GallerySection';
@@ -20,7 +20,7 @@ import { NavigationBar } from './components/NavigationBar';
 import { PublishStudioModal } from './components/PublishStudioModal';
 import { RsvpSection } from './components/RsvpSection';
 import { VenueMapSection } from './components/VenueMapSection';
-import { DEFAULT_WEDDING_CONFIG, INITIAL_RSVPS } from './data/defaultWedding';
+import { DEFAULT_WEDDING_CONFIG, INITIAL_RSVPS, resolveBundledConfigImages } from './data/defaultWedding';
 import type { AttendanceStatus, RsvpEntry, RsvpSummary, WeddingConfig } from './types/wedding';
 import { weddingAudio } from './utils/audioEngine';
 
@@ -41,8 +41,6 @@ function computeSummary(entries: RsvpEntry[]): RsvpSummary {
   };
 }
 
-const ROMAN_CHAPTERS = ['Bab I', 'Bab II', 'Bab III', 'Bab IV', 'Bab V'];
-
 export default function App() {
   const [config, setConfig] = useState<WeddingConfig>(DEFAULT_WEDDING_CONFIG);
   const [rsvps, setRsvps] = useState<RsvpEntry[]>(INITIAL_RSVPS);
@@ -50,7 +48,15 @@ export default function App() {
   const [guestName, setGuestName] = useState<string>(getGuestFromQuery);
   const [isOpened, setIsOpened] = useState(false);
   const [isPlayingMusic, setIsPlayingMusic] = useState(false);
-  const [isStudioOpen, setIsStudioOpen] = useState(false);
+  const [isStudioOpen, setIsStudioOpen] = useState(
+    () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('studio')
+  );
+  const { scrollYProgress } = useScroll();
+  const smoothProgress = useSpring(scrollYProgress, {
+    stiffness: 180,
+    damping: 28,
+    restDelta: 0.001,
+  });
 
   const loadBackendData = useCallback(async () => {
     try {
@@ -59,7 +65,7 @@ export default function App() {
         fetch('/api/rsvp'),
       ]);
       if (cfgRes.ok) {
-        const cfgData = (await cfgRes.json()) as WeddingConfig;
+        const cfgData = resolveBundledConfigImages((await cfgRes.json()) as WeddingConfig);
         setConfig(cfgData);
         weddingAudio.setCustomUrl(cfgData.audioUrl || '');
       }
@@ -143,7 +149,7 @@ export default function App() {
         body: JSON.stringify(nextConfig),
       });
       if (!res.ok) return false;
-      const saved = (await res.json()) as WeddingConfig;
+      const saved = resolveBundledConfigImages((await res.json()) as WeddingConfig);
       setConfig(saved);
       weddingAudio.setCustomUrl(saved.audioUrl || '');
       return true;
@@ -164,7 +170,6 @@ export default function App() {
           guestName={guestName}
           isOpen={isOpened}
           onOpenInvitation={handleOpenInvitation}
-          onOpenStudio={() => setIsStudioOpen(true)}
         />
 
         {/* Sticky Top Bar (Desktop) & Bottom Thumb Nav (Mobile) + Music Toggle */}
@@ -175,6 +180,15 @@ export default function App() {
           onToggleMusic={handleToggleMusic}
         />
 
+        {/* Gold Scroll Progress Bar */}
+        {isOpened && (
+          <motion.div
+            aria-hidden="true"
+            style={{ scaleX: smoothProgress }}
+            className="fixed top-0 right-0 left-0 z-40 h-[3px] origin-left bg-gradient-to-r from-[#B8862D] via-[#DFB963] to-[#B8862D]"
+          />
+        )}
+
         {/* Main Content */}
         <main>
           {/* Hero Editorial Split with Keraton Arch Frame & Kawung Motif */}
@@ -183,7 +197,13 @@ export default function App() {
 
             <div className="relative z-10 mx-auto max-w-6xl">
               <div className="grid grid-cols-1 items-stretch gap-10 lg:grid-cols-12 lg:gap-14">
-                <div className="flex flex-col justify-center lg:col-span-6">
+                <motion.div
+                  initial={{ opacity: 0, y: 26 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: false, amount: 0.18 }}
+                  transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
+                  className="flex flex-col justify-center lg:col-span-6"
+                >
                   <div className="mb-5 flex items-center gap-4 text-[#B8862D]">
                     <GununganMotif className="h-12 w-9" />
                     <CoupleMonogramCrest
@@ -194,7 +214,7 @@ export default function App() {
                   </div>
 
                   <p className="text-xs font-semibold tracking-[0.22em] uppercase text-[#8A5E14]">
-                    Pawiwahan Ageng Jawa · {config.akad.dateLabel}
+                    Undangan Pernikahan · {config.resepsi.dateLabel}
                   </p>
 
                   <h1 className="mt-3 font-serif text-5xl font-semibold tracking-tight text-[#24160F] sm:text-6xl lg:text-7xl">
@@ -222,46 +242,81 @@ export default function App() {
                       Lihat Lokasi Acara
                     </a>
                   </div>
-                </div>
+                </motion.div>
 
                 {/* Signature Keraton Archway Frame */}
-                <div className="lg:col-span-6">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.94, y: 24 }}
+                  whileInView={{ opacity: 1, scale: 1, y: 0 }}
+                  viewport={{ once: false, amount: 0.18 }}
+                  transition={{ duration: 0.7, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+                  className="lg:col-span-6"
+                >
                   <div className="keraton-arch relative h-full min-h-[400px] border border-[#B8862D]/40 bg-white p-2.5 shadow-xl lg:min-h-[580px]">
                     <div className="keraton-arch relative h-full w-full overflow-hidden bg-[#24160F]">
                       <img
                         src={config.coverPhoto}
                         alt={config.coupleTitle}
                         referrerPolicy="no-referrer"
-                        className="h-full w-full object-cover object-center"
+                        className="h-full w-full object-cover object-top"
                       />
                       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#1D110B]/60 via-transparent to-transparent" />
                       <UkiranCorner className="pointer-events-none absolute right-4 bottom-4 h-9 w-9 rotate-180 text-[#DFB963]/85" />
                       <UkiranCorner className="pointer-events-none absolute bottom-4 left-4 h-9 w-9 -rotate-90 text-[#DFB963]/85" />
                     </div>
                   </div>
-                </div>
+                </motion.div>
               </div>
 
-              {/* Clean Full-Width Editorial Metadata Strip */}
-              <div className="mt-10 flex flex-wrap items-center justify-between gap-4 border-t border-[#B8862D]/20 pt-6 text-xs font-medium text-[#574439] sm:text-sm">
-                <span>
-                  <strong className="text-[#24160F]">Akad Nikah:</strong>{' '}
-                  <span className="tabular-nums">{config.akad.timeLabel}</span>
-                </span>
-                <span className="hidden text-[#B8862D] sm:inline" aria-hidden="true">
-                  ·
-                </span>
-                <span>
-                  <strong className="text-[#24160F]">Resepsi:</strong>{' '}
-                  <span className="tabular-nums">{config.resepsi.timeLabel}</span>
-                </span>
-                <span className="hidden text-[#B8862D] sm:inline" aria-hidden="true">
-                  ·
-                </span>
-                <span>
-                  <strong className="text-[#24160F]">Tempat:</strong> {config.venueName}
-                </span>
-              </div>
+              {/* Elevated Java Heritage Schedule & Venue Showcase Bar */}
+              <motion.div
+                initial={{ opacity: 0, y: 22 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: false, amount: 0.2 }}
+                transition={{ duration: 0.6, delay: 0.14, ease: [0.16, 1, 0.3, 1] }}
+                className="mt-12 rounded-3xl border border-[#B8862D]/35 bg-white/90 p-2 shadow-sm backdrop-blur-sm"
+              >
+                <div className="grid grid-cols-1 divide-y divide-[#B8862D]/20 rounded-[20px] border border-[#B8862D]/20 md:grid-cols-3 md:divide-x md:divide-y-0">
+                  <div className="flex flex-col items-center px-6 py-5 text-center">
+                    <div className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-[0.22em] uppercase text-[#8A5E14]">
+                      <CalendarHeart className="h-3.5 w-3.5 text-[#B8862D]" />
+                      <span>{config.akad.title}</span>
+                    </div>
+                    <p className="mt-2 font-serif text-2xl font-semibold tracking-tight text-[#24160F] sm:text-[26px]">
+                      {config.akad.dateLabel}
+                    </p>
+                    <p className="mt-1 font-serif text-base italic text-[#6E594C] tabular-nums">
+                      Pukul {config.akad.timeLabel}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col items-center px-6 py-5 text-center">
+                    <div className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-[0.22em] uppercase text-[#8A5E14]">
+                      <CalendarHeart className="h-3.5 w-3.5 text-[#B8862D]" />
+                      <span>{config.resepsi.title}</span>
+                    </div>
+                    <p className="mt-2 font-serif text-2xl font-semibold tracking-tight text-[#24160F] sm:text-[26px]">
+                      {config.resepsi.dateLabel}
+                    </p>
+                    <p className="mt-1 font-serif text-base italic text-[#6E594C] tabular-nums">
+                      Pukul {config.resepsi.timeLabel}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col items-center px-6 py-5 text-center">
+                    <div className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-[0.22em] uppercase text-[#8A5E14]">
+                      <MapPin className="h-3.5 w-3.5 text-[#B8862D]" />
+                      <span>Lokasi Acara</span>
+                    </div>
+                    <p className="mt-2 font-serif text-2xl font-semibold tracking-tight text-[#24160F] sm:text-[26px]">
+                      {config.venueName}
+                    </p>
+                    <p className="mt-1 font-serif text-base italic text-[#6E594C]">
+                      {config.resepsi.venue}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
             </div>
           </section>
 
@@ -271,34 +326,45 @@ export default function App() {
           {/* Mempelai (Bride & Groom) with Keraton Arch Portraits */}
           <section id="mempelai" className="relative bg-[#FAF6EE] px-5 py-16 sm:py-24">
             <div className="mx-auto max-w-5xl text-center">
-              <p className="text-xs font-semibold tracking-[0.18em] uppercase text-[#8A5E14]">
-                {config.greetingTitle}
-              </p>
-              <h2 className="mt-2 font-serif text-3xl font-semibold text-[#24160F] sm:text-5xl">
-                Mempelai Berbahagia
-              </h2>
-              <div className="mx-auto mt-4 flex justify-center text-[#B8862D]">
-                <KawungDivider className="h-6 w-52" />
-              </div>
-              <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-[#574439] sm:text-base">
-                Dengan memohon rahmat dan ridho Tuhan Yang Maha Esa, kami bermaksud menyelenggarakan pernikahan putra-putri kami:
-              </p>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: false, amount: 0.2 }}
+                transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <p className="text-xs font-semibold tracking-[0.18em] uppercase text-[#8A5E14]">
+                  {config.greetingTitle}
+                </p>
+                <h2 className="mt-2 font-serif text-3xl font-semibold text-[#24160F] sm:text-5xl">
+                  Mempelai Berbahagia
+                </h2>
+                <div className="mx-auto mt-4 flex justify-center text-[#B8862D]">
+                  <KawungDivider className="h-6 w-52" />
+                </div>
+                <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-[#574439] sm:text-base">
+                  Dengan memohon rahmat dan ridho Allah SWT, kami bermaksud menyelenggarakan pernikahan anak kami:
+                </p>
+              </motion.div>
 
               <div className="relative mt-12 grid grid-cols-1 items-stretch gap-8 md:grid-cols-2 md:gap-12">
                 {/* Connecting '&' Monogram on Desktop */}
-                <div
+                <motion.div
                   aria-hidden="true"
+                  initial={{ opacity: 0, scale: 0.7 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: false, amount: 0.2 }}
+                  transition={{ duration: 0.5, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
                   className="pointer-events-none absolute top-1/2 left-1/2 z-10 hidden h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-[#B8862D]/40 bg-[#FAF6EE] font-serif text-3xl italic text-[#B8862D] shadow-sm md:flex"
                 >
                   &amp;
-                </div>
+                </motion.div>
 
                 {/* Mempelai Wanita */}
                 <motion.article
-                  initial={{ opacity: 0, y: 18 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.2 }}
-                  transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+                  initial={{ opacity: 0, y: 26, scale: 0.97 }}
+                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                  viewport={{ once: false, amount: 0.18 }}
+                  transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
                   className="rounded-3xl border border-[#B8862D]/30 bg-white p-2.5 shadow-sm"
                 >
                   <div className="flex h-full flex-col items-center rounded-[20px] border border-[#B8862D]/15 px-6 py-8">
@@ -307,7 +373,7 @@ export default function App() {
                         src={config.bride.photo}
                         alt={config.bride.fullName}
                         referrerPolicy="no-referrer"
-                        className="keraton-arch h-full w-full object-cover"
+                        className="keraton-arch h-full w-full object-cover object-top"
                       />
                     </div>
                     <p className="mt-6 text-xs font-semibold tracking-[0.2em] uppercase text-[#8A5E14]">
@@ -322,24 +388,26 @@ export default function App() {
                       </span>
                       {config.bride.parents}
                     </p>
-                    <a
-                      href={`https://instagram.com/${config.bride.instagram.replace(/^@/, '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-5 inline-flex min-h-[40px] items-center gap-1.5 text-xs font-semibold text-[#8A5E14] hover:underline"
-                    >
-                      <Instagram className="h-3.5 w-3.5" />
-                      <span>{config.bride.instagram}</span>
-                    </a>
+                    {config.bride.instagram && (
+                      <a
+                        href={`https://instagram.com/${config.bride.instagram.replace(/^@/, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-5 inline-flex min-h-[40px] items-center gap-1.5 text-xs font-semibold text-[#8A5E14] hover:underline"
+                      >
+                        <Instagram className="h-3.5 w-3.5" />
+                        <span>{config.bride.instagram}</span>
+                      </a>
+                    )}
                   </div>
                 </motion.article>
 
                 {/* Mempelai Pria */}
                 <motion.article
-                  initial={{ opacity: 0, y: 18 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.2 }}
-                  transition={{ duration: 0.55, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                  initial={{ opacity: 0, y: 26, scale: 0.97 }}
+                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                  viewport={{ once: false, amount: 0.18 }}
+                  transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
                   className="rounded-3xl border border-[#B8862D]/30 bg-white p-2.5 shadow-sm"
                 >
                   <div className="flex h-full flex-col items-center rounded-[20px] border border-[#B8862D]/15 px-6 py-8">
@@ -348,7 +416,7 @@ export default function App() {
                         src={config.groom.photo}
                         alt={config.groom.fullName}
                         referrerPolicy="no-referrer"
-                        className="keraton-arch h-full w-full object-cover"
+                        className="keraton-arch h-full w-full object-cover object-top"
                       />
                     </div>
                     <p className="mt-6 text-xs font-semibold tracking-[0.2em] uppercase text-[#8A5E14]">
@@ -363,15 +431,17 @@ export default function App() {
                       </span>
                       {config.groom.parents}
                     </p>
-                    <a
-                      href={`https://instagram.com/${config.groom.instagram.replace(/^@/, '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-5 inline-flex min-h-[40px] items-center gap-1.5 text-xs font-semibold text-[#8A5E14] hover:underline"
-                    >
-                      <Instagram className="h-3.5 w-3.5" />
-                      <span>{config.groom.instagram}</span>
-                    </a>
+                    {config.groom.instagram && (
+                      <a
+                        href={`https://instagram.com/${config.groom.instagram.replace(/^@/, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-5 inline-flex min-h-[40px] items-center gap-1.5 text-xs font-semibold text-[#8A5E14] hover:underline"
+                      >
+                        <Instagram className="h-3.5 w-3.5" />
+                        <span>{config.groom.instagram}</span>
+                      </a>
+                    )}
                   </div>
                 </motion.article>
               </div>
@@ -380,53 +450,6 @@ export default function App() {
 
           {/* Acara & Google Maps */}
           <VenueMapSection config={config} />
-
-          {/* Perjalanan Kasih (Editorial Chapter Timeline) */}
-          <section className="bg-[#FAF6EE] px-5 py-16 sm:py-24">
-            <div className="mx-auto max-w-4xl">
-              <div className="text-center">
-                <p className="text-xs font-semibold tracking-[0.2em] uppercase text-[#8A5E14]">
-                  Perjalanan Kasih
-                </p>
-                <h2 className="mt-2 font-serif text-3xl font-semibold text-[#24160F] sm:text-5xl">
-                  Kisah Kami
-                </h2>
-                <div className="mx-auto mt-4 flex justify-center text-[#B8862D]">
-                  <KawungDivider className="h-6 w-52" />
-                </div>
-              </div>
-
-              <div className="mt-12 divide-y divide-[#B8862D]/20 border-y border-[#B8862D]/25">
-                {config.loveStory.map((story, idx) => (
-                  <motion.div
-                    key={story.id}
-                    initial={{ opacity: 0, y: 14 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.2 }}
-                    transition={{ duration: 0.5, delay: idx * 0.08, ease: [0.16, 1, 0.3, 1] }}
-                    className="grid grid-cols-1 gap-3 py-8 sm:grid-cols-12 sm:gap-8"
-                  >
-                    <div className="flex items-baseline gap-3 sm:col-span-3 sm:block">
-                      <p className="text-xs font-semibold tracking-[0.16em] uppercase text-[#8A5E14]">
-                        {ROMAN_CHAPTERS[idx] || `Bab ${idx + 1}`}
-                      </p>
-                      <span className="font-serif text-3xl font-semibold tabular-nums text-[#B8862D] sm:mt-1 sm:block sm:text-4xl">
-                        {story.year}
-                      </span>
-                    </div>
-                    <div className="sm:col-span-9">
-                      <h3 className="font-serif text-2xl font-semibold text-[#24160F] sm:text-3xl">
-                        {story.title}
-                      </h3>
-                      <p className="mt-2.5 text-sm leading-relaxed text-[#574439] sm:text-base">
-                        {story.description}
-                      </p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </section>
 
           {/* Interactive Responsive Photo Gallery */}
           <GallerySection photos={config.gallery} />
@@ -444,7 +467,13 @@ export default function App() {
         {/* Footer */}
         <footer className="relative overflow-hidden bg-[#24160F] px-5 py-16 text-center text-[#FAF6EE]">
           <BatikKawungPattern id="footer-kawung" className="text-[#DFB963] opacity-[0.045]" />
-          <div className="relative z-10 mx-auto max-w-3xl">
+          <motion.div
+            initial={{ opacity: 0, y: 22 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: false, amount: 0.2 }}
+            transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
+            className="relative z-10 mx-auto max-w-3xl"
+          >
             <div className="mx-auto mb-4 flex items-center justify-center gap-3 text-[#DFB963]">
               <GununganMotif className="h-11 w-8" />
             </div>
@@ -454,21 +483,10 @@ export default function App() {
             <h2 className="mt-2 font-serif text-4xl font-semibold sm:text-5xl">
               {config.coupleTitle}
             </h2>
-            <p className="mx-auto mt-3 max-w-md text-xs leading-relaxed text-[#FAF6EE]/75 sm:text-sm">
-              Atas kehadiran dan doa restu Bapak/Ibu/Saudara/i, kami beserta keluarga besar mengucapkan terima kasih yang sebesar-besarnya.
+            <p className="mx-auto mt-3 max-w-lg text-xs leading-relaxed text-[#FAF6EE]/75 sm:text-sm">
+              Kami yang berbahagia: Kel. {config.bride.parents} &amp; Kel. {config.groom.parents}. Atas kehadiran dan doa restu Bapak/Ibu/Saudara/i, kami haturkan terima kasih.
             </p>
-
-            <div className="mt-8 border-t border-[#DFB963]/20 pt-7">
-              <button
-                type="button"
-                onClick={() => setIsStudioOpen(true)}
-                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full border border-[#DFB963]/40 bg-[#311F15] px-5 py-2.5 text-xs font-semibold text-[#FAF6EE] transition-colors hover:bg-[#3F291C]"
-              >
-                <Settings2 className="h-4 w-4 text-[#DFB963]" />
-                <span>Kelola Undangan, Google Sheets &amp; Export HTML (Canva)</span>
-              </button>
-            </div>
-          </div>
+          </motion.div>
         </footer>
 
         {/* Creator & Publish Studio Modal */}

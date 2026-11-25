@@ -27,7 +27,13 @@ export const VenueMapSection: React.FC<VenueMapSectionProps> = ({ config }) => {
   return (
     <section id="acara" className="bg-[#F2EAD9] px-5 py-16 sm:py-24">
       <div className="mx-auto max-w-5xl">
-        <div className="text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: false, amount: 0.2 }}
+          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+          className="text-center"
+        >
           <p className="text-xs font-semibold tracking-[0.2em] uppercase text-[#8A5E14]">
             Rangkaian Acara
           </p>
@@ -37,17 +43,17 @@ export const VenueMapSection: React.FC<VenueMapSectionProps> = ({ config }) => {
           <div className="mx-auto mt-4 flex justify-center text-[#B8862D]">
             <KawungDivider className="h-6 w-52" />
           </div>
-        </div>
+        </motion.div>
 
         {/* Two-Column Keraton Framed Event Cards */}
         <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">
           {events.map((ev, idx) => (
             <motion.div
               key={ev.title}
-              initial={{ opacity: 0, y: 18 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.55, delay: idx * 0.1, ease: [0.16, 1, 0.3, 1] }}
+              initial={{ opacity: 0, y: 24, scale: 0.97 }}
+              whileInView={{ opacity: 1, y: 0, scale: 1 }}
+              viewport={{ once: false, amount: 0.18 }}
+              transition={{ duration: 0.6, delay: idx * 0.1, ease: [0.16, 1, 0.3, 1] }}
               className="rounded-3xl border border-[#B8862D]/30 bg-white p-2.5 shadow-sm"
             >
               <div className="relative flex h-full flex-col justify-between rounded-[20px] border border-[#B8862D]/20 px-6 py-8 text-center sm:px-8">
@@ -90,9 +96,9 @@ export const VenueMapSection: React.FC<VenueMapSectionProps> = ({ config }) => {
         {/* Google Maps Integration */}
         <motion.div
           id="lokasi"
-          initial={{ opacity: 0, y: 18 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.15 }}
+          initial={{ opacity: 0, y: 24, scale: 0.98 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: false, amount: 0.15 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="mt-10 overflow-hidden rounded-3xl border border-[#B8862D]/30 bg-white shadow-sm"
         >
@@ -109,9 +115,15 @@ export const VenueMapSection: React.FC<VenueMapSectionProps> = ({ config }) => {
                   {config.venueAddress}
                 </p>
 
-                <div className="mt-4 flex items-center gap-2 text-xs text-[#6E594C]">
-                  <Calendar className="h-4 w-4 text-[#B8862D]" />
-                  <span>{config.akad.dateLabel} · Pukul 08.00 – 14.30 WIB</span>
+                <div className="mt-4 space-y-1.5 text-xs text-[#6E594C]">
+                  <p className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 shrink-0 text-[#B8862D]" />
+                    <span>{config.akad.title}: {config.akad.dateLabel} · {config.akad.timeLabel}</span>
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 shrink-0 text-[#B8862D]" />
+                    <span>{config.resepsi.title}: {config.resepsi.dateLabel} · {config.resepsi.timeLabel}</span>
+                  </p>
                 </div>
               </div>
 

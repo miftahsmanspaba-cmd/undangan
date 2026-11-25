@@ -1,0 +1,29 @@
+[
+  {
+    "id": "rsvp-1",
+    "nama": "Keluarga Besar Pakembaran",
+    "hubungan": "Keluarga Mempelai Wanita",
+    "kehadiran": "Hadir",
+    "jumlahTamu": 3,
+    "ucapan": "Semoga akad nikah dan resepsi Bismi & Rendi berjalan lancar serta menjadi keluarga yang sakinah, mawaddah, warahmah.",
+    "createdAt": "2026-11-20T09:15:00+07:00"
+  },
+  {
+    "id": "rsvp-2",
+    "nama": "Rekan Alumni Teknik Komputer",
+    "hubungan": "Sahabat Kuliah",
+    "kehadiran": "Hadir",
+    "jumlahTamu": 2,
+    "ucapan": "Selamat menempuh hidup baru Bismi & Rendi! InsyaAllah hadir meramaikan acara di Pakembaran, Slawi.",
+    "createdAt": "2026-11-22T14:40:00+07:00"
+  },
+  {
+    "id": "rsvp-3",
+    "nama": "Keluarga Selapura",
+    "hubungan": "Kerabat Mempelai Pria",
+    "kehadiran": "Hadir",
+    "jumlahTamu": 2,
+    "ucapan": "Barakallahu lakuma wa baraka ‘alaikuma. Doa terbaik selalu menyertai Rendi dan Bismi.",
+    "createdAt": "2026-11-23T19:05:00+07:00"
+  }
+]

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import { CheckCircle2, Send, Sheet } from 'lucide-react';
 import type { AttendanceStatus, RsvpEntry, RsvpSummary } from '../types/wedding';
 import { KawungDivider } from './JavaneseOrnaments';
@@ -66,9 +67,15 @@ export const RsvpSection: React.FC<RsvpSectionProps> = ({
   };
 
   return (
-    <section id="rsvp" className="bg-[#FAF6EE] px-5 py-16 sm:py-24">
+    <section id="rsvp" className="bg-[#F2EAD9] px-5 py-16 sm:py-24">
       <div className="mx-auto max-w-5xl">
-        <div className="text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 22 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: false, amount: 0.2 }}
+          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+          className="text-center"
+        >
           <p className="text-xs font-semibold tracking-[0.2em] uppercase text-[#8A5E14]">
             Konfirmasi Kehadiran
           </p>
@@ -105,11 +112,15 @@ export const RsvpSection: React.FC<RsvpSectionProps> = ({
               </>
             )}
           </div>
-        </div>
+        </motion.div>
 
         <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-start">
           {/* Form Column */}
-          <form
+          <motion.form
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: false, amount: 0.15 }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             onSubmit={handleSubmit}
             className="rounded-3xl border border-[#B8862D]/30 bg-white p-6 shadow-sm sm:p-8 lg:col-span-5"
           >
@@ -248,10 +259,16 @@ export const RsvpSection: React.FC<RsvpSectionProps> = ({
                 </div>
               )}
             </div>
-          </form>
+          </motion.form>
 
           {/* Wishes Feed Column */}
-          <div className="lg:col-span-7">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: false, amount: 0.15 }}
+            transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+            className="lg:col-span-7"
+          >
             <div className="max-h-[560px] space-y-3 overflow-y-auto pr-1">
               {entries.length === 0 ? (
                 <div className="rounded-2xl border border-[#B8862D]/20 bg-white p-8 text-center text-sm text-[#634F43]">
@@ -293,7 +310,7 @@ export const RsvpSection: React.FC<RsvpSectionProps> = ({
                 ))
               )}
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>

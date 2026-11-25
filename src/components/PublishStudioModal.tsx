@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Check,
   Code2,
@@ -38,10 +38,18 @@ export const PublishStudioModal: React.FC<PublishStudioModalProps> = ({
   const [tab, setTab] = useState<StudioTab>('customize');
   const [draft, setDraft] = useState<WeddingConfig>(config);
   const [guestInput, setGuestInput] = useState('Bapak Hendrawan & Ibu');
+  const [hostedUrl, setHostedUrl] = useState(() =>
+    typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : ''
+  );
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [downloadingHtml, setDownloadingHtml] = useState(false);
+  const [copyingHtml, setCopyingHtml] = useState(false);
+
+  useEffect(() => {
+    setDraft(config);
+  }, [config, isOpen]);
 
   if (!isOpen) return null;
 
@@ -88,17 +96,25 @@ export const PublishStudioModal: React.FC<PublishStudioModalProps> = ({
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      const slug = draft.coupleTitle
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '');
-      a.download = `undangan-java-heritage-${slug || 'pernikahan'}.html`;
+      a.download = 'index.html';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } finally {
       setDownloadingHtml(false);
+    }
+  };
+
+  const handleCopyHtml = async () => {
+    setCopyingHtml(true);
+    try {
+      const htmlString = await generateStandaloneHtml(draft);
+      await navigator.clipboard.writeText(htmlString);
+      setCopiedKey('html-code');
+      window.setTimeout(() => setCopiedKey(null), 2500);
+    } finally {
+      setCopyingHtml(false);
     }
   };
 
@@ -117,7 +133,7 @@ export const PublishStudioModal: React.FC<PublishStudioModalProps> = ({
               Kelola Undangan &amp; Publish
             </h2>
             <p className="text-xs text-[#FAF6EE]/70">
-              Edit data mempelai, generator link tamu ?to=, sinkronisasi Google Sheets, dan ekspor HTML untuk Canva
+              Edit data mempelai, generator link tamu ?to=, sinkronisasi Google Sheets, dan ekspor index.html untuk GitHub Pages / Canva
             </p>
           </div>
           <button
@@ -168,7 +184,7 @@ export const PublishStudioModal: React.FC<PublishStudioModalProps> = ({
             }`}
           >
             <Code2 className="h-3.5 w-3.5" />
-            <span>Download HTML &amp; Canva</span>
+            <span>Download HTML &amp; GitHub / Canva</span>
           </button>
         </div>
 
@@ -456,10 +472,10 @@ export const PublishStudioModal: React.FC<PublishStudioModalProps> = ({
             <div className="space-y-6">
               <div className="rounded-2xl border border-[#B8862D]/30 bg-white p-6">
                 <h3 className="font-serif text-2xl font-semibold text-[#24160F]">
-                  Download File HTML Mandiri (.html)
+                  Download File <code className="text-lg">index.html</code> Siap Pakai (Anti Blank Putih)
                 </h3>
                 <p className="mt-1.5 text-sm leading-relaxed text-[#574439]">
-                  Unduh seluruh undangan ini menjadi satu file <strong>.html</strong> lengkap (sudah termasuk semua foto, musik instrumen Jawa otomatis, countdown, galeri interaktif lightbox, Google Maps, parameter <code className="rounded bg-[#F2EAD9] px-1.5 py-0.5 text-xs">?to=Nama+Tamu</code>, dan koneksi RSVP Google Sheets Anda).
+                  Unduh seluruh undangan menjadi 1 file <strong>index.html</strong> murni (tanpa perlu compile React/Vite) yang langsung berjalan saat di-upload ke <strong>GitHub Pages</strong>, <strong>Netlify Drop</strong>, atau disematkan di <strong>Canva</strong>.
                 </p>
 
                 <div className="mt-5 flex flex-wrap gap-3">
@@ -472,44 +488,110 @@ export const PublishStudioModal: React.FC<PublishStudioModalProps> = ({
                     <Download className="h-4 w-4" />
                     <span>
                       {downloadingHtml
-                        ? 'Menyiapkan File HTML...'
-                        : 'Download Undangan (.html)'}
+                        ? 'Menyiapkan index.html...'
+                        : 'Download index.html'}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={copyingHtml}
+                    onClick={handleCopyHtml}
+                    className="inline-flex min-h-[48px] items-center gap-2 rounded-full border border-[#B8862D]/40 bg-[#FAF6EE] px-5 py-3 text-sm font-semibold text-[#24160F] hover:bg-[#F2EAD9] disabled:opacity-60"
+                  >
+                    {copiedKey === 'html-code' ? <Check className="h-4 w-4 text-[#1E5631]" /> : <Copy className="h-4 w-4 text-[#8A5E14]" />}
+                    <span>
+                      {copiedKey === 'html-code'
+                        ? 'Kode HTML Tersalin'
+                        : copyingHtml
+                          ? 'Menyalin...'
+                          : 'Salin Kode HTML'}
                     </span>
                   </button>
                 </div>
               </div>
 
+              {/* Canva Embed & Code Generator */}
+              <div className="rounded-2xl border border-[#B8862D]/30 bg-white p-6">
+                <h4 className="font-serif text-2xl font-semibold text-[#24160F]">
+                  Pasang di Canva (Canva Website &amp; Embed)
+                </h4>
+                <p className="mt-1 text-xs leading-relaxed text-[#574439]">
+                  Canva tidak menerima upload file <code className="bg-[#F2EAD9] px-1">.html</code> langsung, namun Anda bisa menyematkan undangan ini penuh 1 layar di <strong>Canva Website</strong> memakai URL publik (dari Netlify Drop / GitHub Pages / URL aplikasi ini):
+                </p>
+
+                <div className="mt-4">
+                  <label className="block text-xs font-semibold text-[#3B281E]">
+                    URL Undangan Publik Anda (untuk disematkan di Canva)
+                  </label>
+                  <input
+                    type="url"
+                    value={hostedUrl}
+                    onChange={(e) => setHostedUrl(e.target.value)}
+                    placeholder="https://nama-anda.github.io/undangan/"
+                    className="mt-1.5 min-h-[42px] w-full rounded-xl border border-[#24160F]/15 bg-[#FAF6EE] px-3.5 py-2 text-xs font-mono"
+                  />
+                </div>
+
+                <div className="mt-3 flex flex-wrap gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => handleCopy('canva-url', hostedUrl.trim() || baseUrl)}
+                    className="inline-flex min-h-[40px] items-center gap-2 rounded-full bg-[#24160F] px-4 py-2 text-xs font-semibold text-[#FAF6EE] hover:bg-[#3A2419]"
+                  >
+                    {copiedKey === 'canva-url' ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                    <span>{copiedKey === 'canva-url' ? 'URL Canva Tersalin' : 'Salin URL untuk Canva Embed'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleCopy(
+                        'canva-iframe',
+                        `<iframe src="${hostedUrl.trim() || baseUrl}" style="width:100%;height:100vh;border:0;" allow="autoplay; clipboard-write" loading="lazy"></iframe>`
+                      )
+                    }
+                    className="inline-flex min-h-[40px] items-center gap-2 rounded-full border border-[#B8862D]/40 bg-[#FAF6EE] px-4 py-2 text-xs font-semibold text-[#24160F] hover:bg-[#F2EAD9]"
+                  >
+                    {copiedKey === 'canva-iframe' ? <Check className="h-3.5 w-3.5 text-[#1E5631]" /> : <Copy className="h-3.5 w-3.5 text-[#8A5E14]" />}
+                    <span>{copiedKey === 'canva-iframe' ? 'Kode Iframe Tersalin' : 'Salin Kode Iframe (Google Sites / HTML Embed)'}</span>
+                  </button>
+                </div>
+
+                <ol className="mt-4 list-decimal space-y-1.5 pl-5 text-xs leading-relaxed text-[#433227]">
+                  <li>Klik <strong>Download index.html</strong> di atas, lalu seret file-nya ke <strong>Netlify Drop</strong> (<code className="bg-[#F2EAD9] px-1">app.netlify.com/drop</code>) — dalam 5 detik langsung jadi URL HTTPS tanpa coding! (Atau gunakan GitHub Pages).</li>
+                  <li>Tempel URL tersebut di kolom atas lalu klik <strong>Salin URL untuk Canva Embed</strong>.</li>
+                  <li>Buka <strong>Canva</strong> &rarr; pilih template <strong>Website</strong> &rarr; klik menu <strong>Apps</strong> di kiri &rarr; cari <strong>Embed</strong> &rarr; tempel URL Anda dan tarik kotaknya hingga memenuhi kanvas.</li>
+                  <li>Klik <strong>Publish Website</strong> di Canva — seluruh fitur (musik otomatis, countdown, galeri lightbox, Google Maps, dan RSVP Google Sheets) langsung aktif di dalam Canva!</li>
+                </ol>
+              </div>
+
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="rounded-2xl border border-[#B8862D]/30 bg-white p-5">
                   <h4 className="font-serif text-xl font-semibold text-[#24160F]">
-                    Cara Publish lewat Canva Website
+                    Upload ke Netlify Drop (5 Detik)
                   </h4>
-                  <ol className="mt-3 list-decimal space-y-2 pl-5 text-xs leading-relaxed text-[#433227]">
-                    <li>Download file <strong>.html</strong> di atas terlebih dahulu.</li>
-                    <li>Unggah file HTML tersebut ke layanan hosting statis gratis seperti <strong>Netlify Drop</strong> (app.netlify.com/drop) atau <strong>GitHub Pages</strong> agar mendapat URL publik.</li>
-                    <li>Buka proyek desain undangan di <strong>Canva</strong> (pilih template <em>Website</em>), lalu tambahkan elemen <strong>Apps &rarr; Embed</strong> atau tombol CTA yang menautkan langsung ke URL undangan HTML Anda (atau tambahkan akhiran <code className="bg-[#F2EAD9] px-1">?to=Nama+Tamu</code> saat membagikan ke tamu).</li>
-                  </ol>
+                  <p className="mt-2 text-xs leading-relaxed text-[#433227]">
+                    Jika ingin cara paling cepat tanpa setting GitHub, cukup buat folder kosong berisi 1 file <strong>index.html</strong> hasil download, lalu seret folder tersebut ke Netlify Drop.
+                  </p>
                   <a
                     href="https://app.netlify.com/drop"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-[#8A5E14] hover:underline"
                   >
-                    <span>Buka Netlify Drop untuk Hosting HTML Gratis</span>
+                    <span>Buka Netlify Drop</span>
                     <ExternalLink className="h-3.5 w-3.5" />
                   </a>
                 </div>
 
                 <div className="rounded-2xl border border-[#B8862D]/30 bg-white p-5">
                   <h4 className="font-serif text-xl font-semibold text-[#24160F]">
-                    Cara Publish RSVP lewat Google Sheets
+                    Upload ke GitHub Pages (Anti Blank)
                   </h4>
-                  <ol className="mt-3 list-decimal space-y-2 pl-5 text-xs leading-relaxed text-[#433227]">
-                    <li>Buka tab <strong>Google Sheets RSVP</strong> di samping dan salin kode <em>Apps Script</em>.</li>
-                    <li>Deploy Apps Script sebagai <em>Web App</em> (akses: <strong>Anyone</strong>).</li>
-                    <li>Tempel URL Web App ke kolom Webhook dan klik Simpan <em>sebelum</em> menekan tombol Download HTML.</li>
-                    <li>File HTML yang Anda unduh otomatis menyimpan URL tersebut sehingga setiap tamu yang mengisi RSVP langsung tercatat ke Google Sheets Anda.</li>
-                  </ol>
+                  <p className="mt-2 text-xs leading-relaxed text-[#433227]">
+                    Upload <strong>index.html</strong> hasil <em>Download index.html</em> ke repository baru lalu aktifkan <strong>Settings &rarr; Pages &rarr; Branch: main</strong>. Jika mengupload seluruh project React, pilih <strong>Source: GitHub Actions</strong>.
+                  </p>
                 </div>
               </div>
             </div>

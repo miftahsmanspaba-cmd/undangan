@@ -36,16 +36,16 @@ function computeRemaining(targetIso: string): TimeRemaining {
 
 function formatGoogleCalendarUrl(config: WeddingConfig): string {
   const start = new Date(config.targetDateIso);
-  const validStart = Number.isNaN(start.getTime()) ? new Date('2026-12-19T08:00:00+07:00') : start;
+  const validStart = Number.isNaN(start.getTime()) ? new Date('2026-12-22T11:00:00+07:00') : start;
   const end = new Date(validStart.getTime() + 6 * 60 * 60 * 1000);
   const toGCalDate = (d: Date) =>
     d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
 
   const params = new URLSearchParams({
     action: 'TEMPLATE',
-    text: `Pernikahan ${config.coupleTitle}`,
+    text: `Resepsi Pernikahan ${config.coupleTitle}`,
     dates: `${toGCalDate(validStart)}/${toGCalDate(end)}`,
-    details: `Akad Nikah & Resepsi Pawiwahan ${config.coupleTitle}`,
+    details: `${config.resepsi.title} (${config.resepsi.dateLabel}) ${config.coupleTitle}`,
     location: `${config.venueName}, ${config.venueAddress}`,
   });
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
@@ -76,9 +76,9 @@ export const CountdownSection: React.FC<CountdownSectionProps> = ({ config }) =>
       <BatikKawungPattern id="countdown-kawung" className="text-[#DFB963] opacity-[0.05]" />
 
       <motion.div
-        initial={{ opacity: 0, y: 18 }}
+        initial={{ opacity: 0, y: 24 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.2 }}
+        viewport={{ once: false, amount: 0.2 }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         className="relative z-10 mx-auto max-w-4xl text-center"
       >
@@ -86,7 +86,7 @@ export const CountdownSection: React.FC<CountdownSectionProps> = ({ config }) =>
           Menuju Hari Bahagia
         </p>
         <h2 className="mt-2 font-serif text-3xl font-semibold text-[#FAF6EE] sm:text-5xl">
-          Hitung Mundur Akad Nikah
+          Hitung Mundur Menuju Resepsi
         </h2>
 
         <div className="mx-auto mt-4 flex justify-center text-[#DFB963]/75">
@@ -94,9 +94,13 @@ export const CountdownSection: React.FC<CountdownSectionProps> = ({ config }) =>
         </div>
 
         <div className="mx-auto mt-9 grid max-w-xl grid-cols-4 gap-3 sm:gap-5">
-          {blocks.map((b) => (
-            <div
+          {blocks.map((b, idx) => (
+            <motion.div
               key={b.label}
+              initial={{ opacity: 0, y: 20, scale: 0.92 }}
+              whileInView={{ opacity: 1, y: 0, scale: 1 }}
+              viewport={{ once: false, amount: 0.2 }}
+              transition={{ duration: 0.5, delay: idx * 0.08, ease: [0.16, 1, 0.3, 1] }}
               className="rounded-2xl border border-[#DFB963]/25 bg-[#311F15]/90 p-1.5 shadow-lg"
             >
               <div className="rounded-xl border border-[#DFB963]/15 px-2 py-4 sm:py-6">
@@ -107,7 +111,7 @@ export const CountdownSection: React.FC<CountdownSectionProps> = ({ config }) =>
                   {b.label}
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
 

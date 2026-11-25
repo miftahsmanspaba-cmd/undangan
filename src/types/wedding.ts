@@ -5,7 +5,7 @@ export interface GalleryPhoto {
   src: string;
   title: string;
   caption: string;
-  category: 'Pendopo' | 'Busana' | 'Detail';
+  category: 'Prewedding' | 'Detail' | 'Pendopo' | 'Busana';
   aspect: 'portrait' | 'landscape' | 'square';
 }
 

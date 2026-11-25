@@ -8,7 +8,7 @@ interface GallerySectionProps {
   photos: GalleryPhoto[];
 }
 
-type CategoryFilter = 'Semua' | 'Pendopo' | 'Busana' | 'Detail';
+type CategoryFilter = 'Semua' | 'Detail';
 
 export const GallerySection: React.FC<GallerySectionProps> = ({ photos }) => {
   const [filter, setFilter] = useState<CategoryFilter>('Semua');
@@ -17,7 +17,7 @@ export const GallerySection: React.FC<GallerySectionProps> = ({ photos }) => {
   const filteredPhotos =
     filter === 'Semua' ? photos : photos.filter((p) => p.category === filter);
 
-  const categories: CategoryFilter[] = ['Semua', 'Pendopo', 'Busana', 'Detail'];
+  const categories: CategoryFilter[] = ['Semua', 'Detail'];
 
   useEffect(() => {
     if (lightboxIndex === null) return;
@@ -43,9 +43,15 @@ export const GallerySection: React.FC<GallerySectionProps> = ({ photos }) => {
   const activePhoto = lightboxIndex !== null ? filteredPhotos[lightboxIndex] : null;
 
   return (
-    <section id="galeri" className="bg-[#F2EAD9] px-5 py-16 sm:py-24">
+    <section id="galeri" className="bg-[#FAF6EE] px-5 py-16 sm:py-24">
       <div className="mx-auto max-w-6xl">
-        <div className="text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: false, amount: 0.2 }}
+          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+          className="text-center"
+        >
           <p className="text-xs font-semibold tracking-[0.2em] uppercase text-[#8A5E14]">
             Momen Bahagia
           </p>
@@ -76,52 +82,47 @@ export const GallerySection: React.FC<GallerySectionProps> = ({ photos }) => {
               </button>
             ))}
           </div>
-        </div>
+        </motion.div>
 
-        {/* Responsive Bento / Masonry Grid */}
+        {/* Responsive Portrait Gallery Grid */}
         <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredPhotos.map((photo, index) => {
-            const isHeroSpan = filter === 'Semua' && index === 0;
-            return (
-              <motion.button
-                key={photo.id}
-                type="button"
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.15 }}
-                transition={{ duration: 0.5, delay: index * 0.06, ease: [0.16, 1, 0.3, 1] }}
-                onClick={() => setLightboxIndex(index)}
-                className={`group relative overflow-hidden rounded-2xl border border-[#B8862D]/30 bg-[#24160F] text-left shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#B8862D] ${
-                  isHeroSpan ? 'sm:row-span-2 aspect-[3/4]' : 'aspect-[4/3]'
-                }`}
-              >
-                <img
-                  src={photo.src}
-                  alt={photo.title}
-                  referrerPolicy="no-referrer"
-                  loading="lazy"
-                  className="h-full w-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#190F0A]/90 via-[#190F0A]/25 to-transparent" />
+          {filteredPhotos.map((photo, index) => (
+            <motion.button
+              key={photo.id}
+              type="button"
+              initial={{ opacity: 0, y: 24, scale: 0.96 }}
+              whileInView={{ opacity: 1, y: 0, scale: 1 }}
+              viewport={{ once: false, amount: 0.15 }}
+              transition={{ duration: 0.55, delay: (index % 3) * 0.08, ease: [0.16, 1, 0.3, 1] }}
+              onClick={() => setLightboxIndex(index)}
+              className="group relative aspect-[3/4] overflow-hidden rounded-2xl border border-[#B8862D]/30 bg-[#24160F] text-left shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#B8862D]"
+            >
+              <img
+                src={photo.src}
+                alt={photo.title}
+                referrerPolicy="no-referrer"
+                loading="lazy"
+                className="h-full w-full object-cover object-top transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#190F0A]/90 via-[#190F0A]/25 to-transparent" />
 
-                <span className="absolute top-3 right-3 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#DFB963]/35 bg-[#24160F]/75 text-[#FAF6EE] opacity-90 backdrop-blur-sm transition-transform duration-200 group-hover:scale-105">
-                  <Expand className="h-4 w-4" />
-                </span>
+              <span className="absolute top-3 right-3 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#DFB963]/35 bg-[#24160F]/75 text-[#FAF6EE] opacity-90 backdrop-blur-sm transition-transform duration-200 group-hover:scale-105">
+                <Expand className="h-4 w-4" />
+              </span>
 
-                <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
-                  <p className="text-xs font-medium text-[#DFB963]">
-                    {photo.category}
-                  </p>
-                  <h3 className="mt-0.5 font-serif text-xl font-semibold text-[#FAF6EE]">
-                    {photo.title}
-                  </h3>
-                  <p className="mt-1 line-clamp-1 text-xs text-[#FAF6EE]/75">
-                    {photo.caption}
-                  </p>
-                </div>
-              </motion.button>
-            );
-          })}
+              <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
+                <p className="text-xs font-medium text-[#DFB963]">
+                  {photo.category}
+                </p>
+                <h3 className="mt-0.5 font-serif text-xl font-semibold text-[#FAF6EE]">
+                  {photo.title}
+                </h3>
+                <p className="mt-1 line-clamp-1 text-xs text-[#FAF6EE]/75">
+                  {photo.caption}
+                </p>
+              </div>
+            </motion.button>
+          ))}
         </div>
       </div>
 

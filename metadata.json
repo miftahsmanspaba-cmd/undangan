@@ -2,5 +2,7 @@
   "name": "Java Heritage — Undangan Pernikahan Digital",
   "description": "Undangan pernikahan digital bergaya klasik Jawa (Java Heritage) dengan musik otomatis, RSVP terintegrasi Google Sheets, galeri foto interaktif responsif, hitung mundur, Google Maps, dan ekspor HTML untuk Canva.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }
