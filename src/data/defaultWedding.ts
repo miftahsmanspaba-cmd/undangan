@@ -7,6 +7,8 @@ const PHOTO_GROOM_COUPLE = '/assets/aistudio/3_bde0a069.jpeg';
 const PHOTO_STANDING = '/assets/aistudio/4_99cfcbd1.jpg';
 const PHOTO_HANDS = '/assets/aistudio/17c6e6c9-7895-48f9-917e-2c48e45402b6_7b7c4827.jpg';
 const PHOTO_SHOULDER = '/assets/aistudio/dbea5894-b3c4-47cf-a8ae-311352537e7d_faa8b159.jpg';
+const AUDIO_JANJI_SUCI =
+  '/assets/aistudio/Yovie_Nuno_-_Janji_Suci_Album_Version_Album_Version__mp3.pm__302dac99.mp3';
 
 const LEGACY_IMAGE_MAP: Record<string, string> = {
   '/src/assets/images/java_hero_couple_1795573727320.jpg': PHOTO_COVER,
@@ -17,10 +19,14 @@ const LEGACY_IMAGE_MAP: Record<string, string> = {
 };
 
 export function resolveBundledConfigImages(cfg: WeddingConfig): WeddingConfig {
-  const mapUrl = (u: string) => LEGACY_IMAGE_MAP[u] || u;
+  const mapUrl = (u: string) => {
+    const mapped = LEGACY_IMAGE_MAP[u] || u;
+    return mapped.startsWith('/assets/') ? `.${mapped}` : mapped;
+  };
   return {
     ...cfg,
     coverPhoto: mapUrl(cfg.coverPhoto),
+    audioUrl: cfg.audioUrl ? mapUrl(cfg.audioUrl) : '',
     bride: { ...cfg.bride, photo: mapUrl(cfg.bride.photo) },
     groom: { ...cfg.groom, photo: mapUrl(cfg.groom.photo) },
     gallery: cfg.gallery.map((g) => ({ ...g, src: mapUrl(g.src) })),
@@ -73,8 +79,8 @@ export const DEFAULT_WEDDING_CONFIG: WeddingConfig = {
   googleMapsUrl:
     "https://www.google.com/maps/place/6%C2%B058'27.6%22S+109%C2%B007'45.6%22E/@-6.97434,109.1267589,750m/data=!3m2!1e3!4b1!4m4!3m3!8m2!3d-6.97434!4d109.1293338?hl=id",
   googleMapsEmbedQuery: '-6.97434,109.1293338',
-  audioUrl: '',
-  audioTitle: 'Ladrang Asmarandana — Instrumen Jawa Klasik',
+  audioUrl: AUDIO_JANJI_SUCI,
+  audioTitle: 'Yovie & Nuno — Janji Suci',
   googleSheetWebhookUrl: '',
   loveStory: [
     {

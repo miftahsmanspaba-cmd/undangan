@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MotionConfig, motion, useScroll, useSpring } from 'motion/react';
 import { CalendarHeart, Instagram, MapPin } from 'lucide-react';
 import { CountdownSection } from './components/CountdownSection';
@@ -42,7 +42,9 @@ function computeSummary(entries: RsvpEntry[]): RsvpSummary {
 }
 
 export default function App() {
-  const [config, setConfig] = useState<WeddingConfig>(DEFAULT_WEDDING_CONFIG);
+  const [config, setConfig] = useState<WeddingConfig>(() =>
+    resolveBundledConfigImages(DEFAULT_WEDDING_CONFIG)
+  );
   const [rsvps, setRsvps] = useState<RsvpEntry[]>(INITIAL_RSVPS);
   const [summary, setSummary] = useState<RsvpSummary>(() => computeSummary(INITIAL_RSVPS));
   const [guestName, setGuestName] = useState<string>(getGuestFromQuery);
@@ -58,35 +60,66 @@ export default function App() {
     restDelta: 0.001,
   });
 
-  const loadBackendData = useCallback(async () => {
-    try {
-      const [cfgRes, rsvpRes] = await Promise.all([
-        fetch('/api/config'),
-        fetch('/api/rsvp'),
-      ]);
-      if (cfgRes.ok) {
-        const cfgData = resolveBundledConfigImages((await cfgRes.json()) as WeddingConfig);
-        setConfig(cfgData);
-        weddingAudio.setCustomUrl(cfgData.audioUrl || '');
+  useEffect(() => {
+    let active = true;
+    const shouldAutoDownload =
+      typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('download');
+
+    const init = async () => {
+      let activeConfig = resolveBundledConfigImages(DEFAULT_WEDDING_CONFIG);
+      let activeRsvps: RsvpEntry[] = INITIAL_RSVPS;
+      try {
+        const [cfgRes, rsvpRes] = await Promise.all([
+          fetch('/api/config'),
+          fetch('/api/rsvp'),
+        ]);
+        if (cfgRes.ok) {
+          activeConfig = resolveBundledConfigImages((await cfgRes.json()) as WeddingConfig);
+          if (active) {
+            setConfig(activeConfig);
+            weddingAudio.setCustomUrl(activeConfig.audioUrl || '');
+          }
+        }
+        if (rsvpRes.ok && active) {
+          const rsvpData = (await rsvpRes.json()) as {
+            entries: RsvpEntry[];
+            summary: RsvpSummary;
+          };
+          if (Array.isArray(rsvpData.entries)) {
+            activeRsvps = rsvpData.entries;
+            setRsvps(rsvpData.entries);
+            setSummary(rsvpData.summary || computeSummary(rsvpData.entries));
+          }
+        }
+      } catch {
+        // Keep default state gracefully if offline
       }
-      if (rsvpRes.ok) {
-        const rsvpData = (await rsvpRes.json()) as {
-          entries: RsvpEntry[];
-          summary: RsvpSummary;
-        };
-        if (Array.isArray(rsvpData.entries)) {
-          setRsvps(rsvpData.entries);
-          setSummary(rsvpData.summary || computeSummary(rsvpData.entries));
+
+      if (shouldAutoDownload && active) {
+        try {
+          const { generateStandaloneHtml } = await import('./utils/htmlExporter');
+          const html = await generateStandaloneHtml(activeConfig, activeRsvps);
+          if (!active) return;
+          const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = 'index.html';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        } catch {
+          // Ignore download error if blocked
         }
       }
-    } catch {
-      // Keep default state gracefully if offline
-    }
-  }, []);
+    };
 
-  useEffect(() => {
-    void loadBackendData();
-  }, [loadBackendData]);
+    void init();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     document.title = `${config.coupleTitle} — Undangan Pernikahan Digital Java Heritage`;
@@ -367,7 +400,7 @@ export default function App() {
                   transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
                   className="rounded-3xl border border-[#B8862D]/30 bg-white p-2.5 shadow-sm"
                 >
-                  <div className="flex h-full flex-col items-center rounded-[20px] border border-[#B8862D]/15 px-6 py-8">
+                  <div className="flex h-full flex-col items-center rounded-[20px] border border-[#B8862D]/15 px-3.5 py-8 sm:px-6">
                     <div className="keraton-arch h-56 w-44 overflow-hidden border border-[#B8862D]/50 bg-[#24160F] p-1.5">
                       <img
                         src={config.bride.photo}
@@ -379,7 +412,7 @@ export default function App() {
                     <p className="mt-6 text-xs font-semibold tracking-[0.2em] uppercase text-[#8A5E14]">
                       Mempelai Wanita
                     </p>
-                    <h3 className="mt-2 font-serif text-3xl font-semibold text-[#24160F]">
+                    <h3 className="mt-2 max-w-full font-serif text-[clamp(1.04rem,4.2vw,1.65rem)] leading-tight font-semibold whitespace-nowrap text-[#24160F] md:text-[clamp(1.12rem,2.15vw,1.75rem)]">
                       {config.bride.fullName}
                     </h3>
                     <p className="mt-3 text-sm leading-relaxed text-[#574439]">
@@ -410,7 +443,7 @@ export default function App() {
                   transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
                   className="rounded-3xl border border-[#B8862D]/30 bg-white p-2.5 shadow-sm"
                 >
-                  <div className="flex h-full flex-col items-center rounded-[20px] border border-[#B8862D]/15 px-6 py-8">
+                  <div className="flex h-full flex-col items-center rounded-[20px] border border-[#B8862D]/15 px-3.5 py-8 sm:px-6">
                     <div className="keraton-arch h-56 w-44 overflow-hidden border border-[#B8862D]/50 bg-[#24160F] p-1.5">
                       <img
                         src={config.groom.photo}
@@ -422,7 +455,7 @@ export default function App() {
                     <p className="mt-6 text-xs font-semibold tracking-[0.2em] uppercase text-[#8A5E14]">
                       Mempelai Pria
                     </p>
-                    <h3 className="mt-2 font-serif text-3xl font-semibold text-[#24160F]">
+                    <h3 className="mt-2 max-w-full font-serif text-[clamp(1.04rem,4.2vw,1.65rem)] leading-tight font-semibold whitespace-nowrap text-[#24160F] md:text-[clamp(1.12rem,2.15vw,1.75rem)]">
                       {config.groom.fullName}
                     </h3>
                     <p className="mt-3 text-sm leading-relaxed text-[#574439]">

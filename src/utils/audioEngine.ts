@@ -10,6 +10,7 @@ class WeddingAudioEngine {
   private loopTimer: number | null = null;
   private playing = false;
   private customUrl = '';
+  private audioSrcKey = '';
   private step = 0;
 
   // Pelog-inspired romantic Javanese pentatonic scale (Hz: D4, Eb4, F4, A4, Bb4, D5, Eb5, F5)
@@ -29,6 +30,8 @@ class WeddingAudioEngine {
     const wasPlaying = this.playing;
     this.stop();
     this.customUrl = trimmed;
+    this.audioEl = null;
+    this.audioSrcKey = '';
     if (wasPlaying) {
       void this.play();
     }
@@ -39,10 +42,12 @@ class WeddingAudioEngine {
 
     if (this.customUrl) {
       try {
-        if (!this.audioEl || this.audioEl.src !== this.customUrl) {
+        if (!this.audioEl || this.audioSrcKey !== this.customUrl) {
           this.audioEl = new Audio(this.customUrl);
+          this.audioEl.preload = 'auto';
           this.audioEl.loop = true;
-          this.audioEl.volume = 0.55;
+          this.audioEl.volume = 0.65;
+          this.audioSrcKey = this.customUrl;
         }
         await this.audioEl.play();
         this.playing = true;
@@ -50,6 +55,7 @@ class WeddingAudioEngine {
       } catch {
         // Fallback to built-in Javanese instrumental synthesizer
         this.audioEl = null;
+        this.audioSrcKey = '';
       }
     }
 

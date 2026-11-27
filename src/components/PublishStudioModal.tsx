@@ -91,7 +91,7 @@ export const PublishStudioModal: React.FC<PublishStudioModalProps> = ({
   const handleDownloadHtml = async () => {
     setDownloadingHtml(true);
     try {
-      const htmlString = await generateStandaloneHtml(draft);
+      const htmlString = await generateStandaloneHtml(draft, rsvps);
       const blob = new Blob([htmlString], { type: 'text/html;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -109,7 +109,7 @@ export const PublishStudioModal: React.FC<PublishStudioModalProps> = ({
   const handleCopyHtml = async () => {
     setCopyingHtml(true);
     try {
-      const htmlString = await generateStandaloneHtml(draft);
+      const htmlString = await generateStandaloneHtml(draft, rsvps);
       await navigator.clipboard.writeText(htmlString);
       setCopiedKey('html-code');
       window.setTimeout(() => setCopiedKey(null), 2500);

@@ -2,9 +2,12 @@ import express from 'express';
 import fs from 'fs';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
+import type { WeddingConfig } from './src/types/wedding';
+import { buildStandaloneHtmlDocument } from './src/utils/standaloneTemplate';
 
 const PORT = 3000;
 const DATA_DIR = path.resolve(process.cwd(), 'data');
+const PUBLIC_DIR = path.resolve(process.cwd(), 'public');
 const CONFIG_FILE = path.join(DATA_DIR, 'wedding-config.json');
 const RSVP_FILE = path.join(DATA_DIR, 'rsvps.json');
 
@@ -65,8 +68,9 @@ const DEFAULT_SERVER_CONFIG = {
   googleMapsUrl:
     "https://www.google.com/maps/place/6%C2%B058'27.6%22S+109%C2%B007'45.6%22E/@-6.97434,109.1267589,750m/data=!3m2!1e3!4b1!4m4!3m3!8m2!3d-6.97434!4d109.1293338?hl=id",
   googleMapsEmbedQuery: '-6.97434,109.1293338',
-  audioUrl: '',
-  audioTitle: 'Ladrang Asmarandana — Instrumen Jawa Klasik',
+  audioUrl:
+    '/assets/aistudio/Yovie_Nuno_-_Janji_Suci_Album_Version_Album_Version__mp3.pm__302dac99.mp3',
+  audioTitle: 'Yovie & Nuno — Janji Suci',
   googleSheetWebhookUrl: '',
   loveStory: [
     {
@@ -340,6 +344,60 @@ async function startServer() {
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="rsvp-java-heritage.csv"');
     res.send(csvContent);
+  });
+
+  function inlineLocalAssetAsDataUri(src: string): string {
+    if (!src) return '';
+    if (src.startsWith('data:')) return src;
+    const normalized = src.replace(/^\.?\//, '');
+    if (!normalized.startsWith('assets/')) return src;
+    const resolved = path.resolve(PUBLIC_DIR, normalized);
+    if (!resolved.startsWith(PUBLIC_DIR + path.sep)) return src;
+    try {
+      if (!fs.existsSync(resolved)) return src;
+      const ext = path.extname(resolved).toLowerCase();
+      const mime =
+        ext === '.png'
+          ? 'image/png'
+          : ext === '.webp'
+            ? 'image/webp'
+            : ext === '.svg'
+              ? 'image/svg+xml'
+              : ext === '.mp3'
+                ? 'audio/mpeg'
+                : ext === '.ogg'
+                  ? 'audio/ogg'
+                  : ext === '.wav'
+                    ? 'audio/wav'
+                    : ext === '.m4a'
+                      ? 'audio/mp4'
+                      : 'image/jpeg';
+      const base64 = fs.readFileSync(resolved).toString('base64');
+      return `data:${mime};base64,${base64}`;
+    } catch {
+      return src;
+    }
+  }
+
+  app.get('/api/download-html', (_req, res) => {
+    const config = readConfig() as WeddingConfig;
+    const initialRsvps = readRsvps();
+    const html = buildStandaloneHtmlDocument(
+      config,
+      {
+        coverData: inlineLocalAssetAsDataUri(config.coverPhoto),
+        brideData: inlineLocalAssetAsDataUri(config.bride.photo),
+        groomData: inlineLocalAssetAsDataUri(config.groom.photo),
+        galleryData: config.gallery.map((g) => inlineLocalAssetAsDataUri(g.src)),
+        audioData: inlineLocalAssetAsDataUri(config.audioUrl),
+      },
+      initialRsvps
+    );
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="index.html"');
+    res.setHeader('Cache-Control', 'no-store');
+    res.send(html);
   });
 
   if (process.env.NODE_ENV !== 'production') {
