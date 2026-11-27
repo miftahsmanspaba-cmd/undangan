@@ -5,7 +5,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { MotionConfig, motion, useScroll, useSpring } from 'motion/react';
-import { CalendarHeart, Instagram, MapPin } from 'lucide-react';
+import { CalendarHeart, Download, Instagram, MapPin, X } from 'lucide-react';
 import { CountdownSection } from './components/CountdownSection';
 import { CoverEnvelope } from './components/CoverEnvelope';
 import { GallerySection } from './components/GallerySection';
@@ -53,6 +53,10 @@ export default function App() {
   const [isStudioOpen, setIsStudioOpen] = useState(
     () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('studio')
   );
+  const [isDownloadOpen, setIsDownloadOpen] = useState(
+    () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('download')
+  );
+  const [isGeneratingDownload, setIsGeneratingDownload] = useState(false);
   const { scrollYProgress } = useScroll();
   const smoothProgress = useSpring(scrollYProgress, {
     stiffness: 180,
@@ -188,6 +192,25 @@ export default function App() {
       return true;
     } catch {
       return false;
+    }
+  };
+
+  const handleTriggerDownload = async () => {
+    setIsGeneratingDownload(true);
+    try {
+      const { generateStandaloneHtml } = await import('./utils/htmlExporter');
+      const html = await generateStandaloneHtml(config, rsvps);
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'index.html';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } finally {
+      setIsGeneratingDownload(false);
     }
   };
 
@@ -535,6 +558,55 @@ export default function App() {
             setIsOpened(false);
           }}
         />
+
+        {/* Direct Download Helper Modal (?download=1) */}
+        {isDownloadOpen && (
+          <div
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-[#140B07]/85 p-5 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="relative w-full max-w-md rounded-3xl border border-[#DFB963]/45 bg-[#FAF6EE] p-6 text-center text-[#24160F] shadow-2xl">
+              <button
+                type="button"
+                onClick={() => setIsDownloadOpen(false)}
+                aria-label="Tutup dialog download"
+                className="absolute top-4 right-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#B8862D]/35 text-[#24160F] hover:bg-[#F2EAD9]"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <p className="text-xs font-bold tracking-[0.2em] uppercase text-[#8A5E14]">
+                Siap Upload ke GitHub Pages
+              </p>
+              <h3 className="mt-2 font-serif text-3xl font-semibold text-[#24160F]">
+                Download index.html
+              </h3>
+              <p className="mt-2 text-xs leading-relaxed text-[#574439]">
+                File hasil download ini sudah memuat semua foto, peta lokasi, RSVP, dan lagu <strong>Yovie &amp; Nuno — Janji Suci</strong> dalam 1 file. Upload file hasil download ini ke GitHub <code className="rounded bg-[#F2EAD9] px-1">miftahsmanspaba-cmd/undangan</code>.
+              </p>
+              <div className="mt-5 flex flex-col gap-2.5">
+                <button
+                  type="button"
+                  disabled={isGeneratingDownload}
+                  onClick={handleTriggerDownload}
+                  className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-[#B8862D] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#9C7022] disabled:opacity-60"
+                >
+                  <Download className="h-4 w-4" />
+                  <span>
+                    {isGeneratingDownload ? 'Menyiapkan File...' : 'Download index.html Sekarang'}
+                  </span>
+                </button>
+                <a
+                  href="/api/download-html"
+                  download="index.html"
+                  className="inline-flex min-h-[44px] w-full items-center justify-center rounded-full border border-[#B8862D]/40 bg-white px-5 py-2.5 text-xs font-semibold text-[#24160F] hover:bg-[#F2EAD9]"
+                >
+                  Link Alternatif (Direct Server Download)
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </MotionConfig>
   );
